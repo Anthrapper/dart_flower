@@ -3,9 +3,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:dart_flower/dart_flower.dart';
 import 'package:flower_flutter/app/helpers/helper_functions.dart';
 import 'package:flower_flutter/app/helpers/logs.dart';
-import 'package:flower_flutter/app/model/transfer_learning_model.dart';
+import 'package:flower_flutter/app/tflite/transfer_learning_model.dart';
 
 class MyClient {
   final TransferLearningModelWrapper tlModel = TransferLearningModelWrapper();
@@ -20,7 +21,7 @@ class MyClient {
     return tlModel.getParameters();
   }
 
-  Future<Map<String, dynamic>> fit(List<Uint8List> weights, int epochs) async {
+  Future<FitResponse> fit(List<Uint8List> weights, int epochs) async {
     localEpochs = epochs;
     await tlModel.updateParameters(weights);
     isTraining = Completer<void>();
@@ -34,7 +35,10 @@ class MyClient {
     final List<Uint8List> newWeights = await getWeights();
     final int trainingSize = await tlModel.getSizeTraining();
     info("trainingSize = $trainingSize", name: "TF");
-    return {'weights': newWeights, 'trainingSize': trainingSize};
+    return FitResponse(
+      weights: newWeights,
+      trainingSize: trainingSize,
+    );
   }
 
   void setLastLoss(int epoch, double newLoss) {
@@ -45,13 +49,16 @@ class MyClient {
     }
   }
 
-  Future<Map<String, dynamic>> evaluate(List<Uint8List> weights) async {
+  Future<EvaluateResponse> evaluate(List<Uint8List> weights) async {
     await tlModel.updateParameters(weights);
     await tlModel.disableTraining();
-    return {
-      'testStats': await tlModel.calculateTestStatistics(),
-      'testSize': await tlModel.getSizeTesting()
-    };
+    final int testSize = await tlModel.getSizeTesting();
+    final List<double> testStats = await tlModel.calculateTestStatistics();
+    return EvaluateResponse(
+      loss: testStats[0],
+      accuracy: testStats[1],
+      testSize: testSize,
+    );
   }
 
   Future<void> loadCifarData(int id, String path) async {

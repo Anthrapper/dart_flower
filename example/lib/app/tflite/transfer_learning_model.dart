@@ -1,5 +1,5 @@
 import 'package:flower_flutter/app/helpers/logs.dart';
-import 'package:flower_flutter/app/model/model_wrapper.dart';
+import 'package:flower_flutter/app/tflite/model_wrapper.dart';
 import 'package:flutter/services.dart';
 
 class TransferLearningModelWrapper extends ModelWrapper {
