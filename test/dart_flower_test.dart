@@ -17,14 +17,15 @@ void main() {
 
       client = FlowerClient(
         getWeights: () => Future.value(mockWeights),
-        evaluate: (List<Uint8List> layers) => Future.value({
-          'testStats': [0.5, 0.8],
-          'testSize': 100
-        }),
-        fit: (List<Uint8List> layers, int epochs) => Future.value({
-          'weights': mockWeights,
-          'trainingSize': 200,
-        }),
+        evaluate: (List<Uint8List> layers) => Future.value(
+          EvaluateResponse(loss: 0.5, testSize: 100, accuracy: 0.8),
+        ),
+        fit: (List<Uint8List> layers, int epochs) => Future.value(
+          FitResponse(
+            weights: mockWeights,
+            trainingSize: 200,
+          ),
+        ),
         ip: '192.168.1.1',
         port: 8080,
       );
@@ -46,10 +47,10 @@ void main() {
     });
 
     test('evaluateResAsProto should return a ClientMessage', () {
-      final result = client.evaluateResAsProto(0.5, 50);
+      final result = client.evaluateResAsProto(0.5, 100);
       expect(result.hasEvaluateRes(), true);
       expect(result.evaluateRes.loss, 0.5);
-      expect(result.evaluateRes.numExamples.toInt(), 50);
+      expect(result.evaluateRes.numExamples.toInt(), 100);
     });
 
     test('handleGetParameters should return a ClientMessage', () async {

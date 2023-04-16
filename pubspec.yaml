@@ -1,7 +1,7 @@
 name: dart_flower
 description: A simple FLOWER client written in dart
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/Anthrapper/dart_flower
 
 environment:
   sdk: '>=2.19.0 <3.0.0'

@@ -3,8 +3,8 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dart_flower/dart_flower.dart';
 import 'package:dart_flower/src/flower/flower_base.dart';
-import 'package:dart_flower/src/generated/transport.pbgrpc.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:grpc/grpc.dart';
 import 'package:logging/logging.dart';
@@ -26,13 +26,13 @@ class FlowerClient implements FlowerClientBase {
   final Future<List<Uint8List>> Function() getWeights;
 
   /// Function to fit the model
-  final Future<Map<String, dynamic>> Function(
+  final Future<FitResponse> Function(
     List<Uint8List> layers,
     int epochs,
   ) fit;
 
   /// Function to evaluate the model
-  final Future<Map<String, dynamic>> Function(
+  final Future<EvaluateResponse> Function(
     List<Uint8List> layers,
   ) evaluate;
 
@@ -82,9 +82,9 @@ class FlowerClient implements FlowerClientBase {
   }
 
   @override
-  ClientMessage evaluateResAsProto(double accuracy, int testingSize) {
+  ClientMessage evaluateResAsProto(double loss, int testingSize) {
     final ClientMessage_EvaluateRes res = ClientMessage_EvaluateRes()
-      ..loss = accuracy
+      ..loss = loss
       ..numExamples = Int64(testingSize);
     return ClientMessage()..evaluateRes = res;
   }
@@ -95,14 +95,13 @@ class FlowerClient implements FlowerClientBase {
     final List<Uint8List> layers = message.evaluateIns.parameters.tensors
         .map((tensor) => Uint8List.fromList(tensor))
         .toList();
-    final Map<String, dynamic> evalRes = await evaluate(layers);
+    final EvaluateResponse evalRes = await evaluate(layers);
 
-    final List<double> testStats = evalRes['testStats'] as List<double>;
-    final double loss = testStats[0];
-    final double accuracy = testStats[1];
+    final double loss = evalRes.loss;
+    final double accuracy = evalRes.accuracy;
 
     _logger.info("Test Accuracy after this round = $accuracy");
-    final int testSize = evalRes['testSize'] as int;
+    final int testSize = evalRes.testSize;
     final ClientMessage res = evaluateResAsProto(loss, testSize);
     return res;
   }
@@ -119,10 +118,12 @@ class FlowerClient implements FlowerClientBase {
         (message.fitIns.config['local_epochs']?.sint64 ?? 1) as Int64;
     _logger.info("Number of epochs: $epochConfig");
 
-    final Map<String, dynamic> fitRes = await fit(layers, epochConfig.toInt());
-    final List<Uint8List> newWeights = fitRes['weights'] as List<Uint8List>;
-    final int trainingSize = fitRes['trainingSize'] as int;
-    final ClientMessage res = fitResAsProto(newWeights, trainingSize);
+    final FitResponse fitRes = await fit(layers, epochConfig.toInt());
+
+    final ClientMessage res = fitResAsProto(
+      fitRes.weights,
+      fitRes.trainingSize,
+    );
     return res;
   }
 

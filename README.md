@@ -28,12 +28,12 @@ import 'package:dart_flower/dart_flower.dart';
   /// Function to get the weights of the model
    Future<List<Uint8List>> Function() getWeights;
   /// Function to fit the model
-   Future<Map<String, dynamic>> Function(
+   Future<FitResponse> Function(
     List<Uint8List> layers,
     int epochs,
   ) fit;
   /// Function to evaluate the model
-   Future<Map<String, dynamic>> Function(
+   Future<EvaluateResponse> Function(
     List<Uint8List> layers,
   ) evaluate;
 
